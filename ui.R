@@ -1,28 +1,28 @@
 library(shiny)
 library(shinydashboard)
+library(shinythemes)
+#library(shinythemes)
 
-shinyUI(dashboardPage(skin = "green",
+shinyUI(dashboardPage(skin = "yellow",
   
-  dashboardHeader(title = "Chat Analysis System", titleWidth = 500),
+  dashboardHeader(title = "Chat Analysis System", dropdownMenuOutput("notify")
+                  #themeSelector(),
+                  ),
   
   dashboardSidebar(
     sidebarMenu(id = ('sidebarmenu'),
-      
-     menuItem(text = "About", tabName = "about" ),
-     menuItem(text = "Data", tabName = "data"),
-     fileInput("file","upload a file"),
-    
+     menuItem(text = "Data", tabName = "data", icon = icon("file-text-o")),
+     menuItem(text = "Summary", tabName = "summary", icon = icon("file-text-o")),
+     menuItem(text = "About", tabName = "about", icon = icon("file-text-o") ),
      menuItem(text = "Visualization tools", tabName = "visualization"),
-     menuItem("Bar-plot1",tabName = "barplot1", icon = icon("bar-chart-o")),
-     menuItem("Bar-plot2",tabName = "barplot2", icon = icon("bar-chart-o")),
-    
-     menuItem("Scatter-plot",tabName = "scatter"),
-     menuItem("Histogram",tabName = "histogram", icon = icon("bar-chart-o")),
-     menuItem("Bar-chat",tabName = "barchat", icon = icon("bar-chart-o")),
+     menuItem("Key words",tabName = "barplot1", icon = icon("bar-chart-o")),
+     menuItem("Country participation",tabName = "barplot2", icon = icon("bar-chart-o")),
+     menuItem("Customercare perfomance", tabName = "customercare", icon = icon("bar-chart-o")),
+     menuItem("Advertising",tabName = "advertise", icon = icon("bar-chart-o")),
+     
+     menuItem("Messages perHour",tabName = "ggplot", icon = icon("bar-chart-o")),
      menuItem(text = "Analysis tools", tabName = "analysis"),
      menuItem(text = "Wordcloud", tabName = "wordcloud", icon = icon("cloud")),
-     
-     
      menuItem("SentimentAnalysis", tabName = "sentiment", icon = icon("bar-chart-o")),
      menuItem("TextAnalysis", tabName = "text", icon = icon("bar-chart-o"))
      )
@@ -31,48 +31,79 @@ shinyUI(dashboardPage(skin = "green",
   dashboardBody(
     
     tabItems(
-      
-      tabItem(tabName = "wordcloud", 
+            tabItem(tabName = "wordcloud", 
               box(
                 sliderInput("wd", "Minimum frequency of words",0 ,20, 10),
                 sliderInput("wcloud", "Maximum number of words",0 ,500, 100)
               ),
-              plotOutput("wordcloud"),
-              radioButtons(inputId = "radio", label = "Select the file type", choices =list( "png","pdf")),
-              downloadButton(outputId = "down", label = "Download file")
+              box(paste("Description:This analysis tool describes the most common words in the Chat.content column of this dataset, that is;'diana' ,'akurut', which are the names of one of the system 'assistant's. We also see 'chat'and'live' which are written whenever a system assistant accepts a live chat with a customer. And others...")),
+              box(paste("Prediction:It predicts that Akurut Diana should probably be promoted or be awarded employee of the month because she is noticed to be the most active system assistant.")),
+              plotOutput("wordcloud")
+              
               
               ),
       
       
       tabItem(tabName ="sentiment",
-              plotOutput("sentiment")
+              plotOutput("sentiment"),
+              box(paste("Description:This analysis tool gaphically describes the emotions and polarity expressed within the conversations between the customers and the system assistants.")),
+              box(paste("Prediction:It predicts that there will be an increase in the usage of the system since there is alot of trust,positivity and anticipation expressed.It also predicts that the customers need to be oreinted on how to better access the services provided by the system to reduce on the negativity."))
+              
               ),
       
       tabItem(tabName = "text",
               plotOutput("text")
+            
+              
               
         ),
       
+      tabItem(tabName = "data", paste("Please select the file to be analyzed:"),
+              
+              fileInput("file","upload a file")
+              
+              ),
+      
+      tabItem(tabName = "summary",
+              tableOutput("sum"),
+              box(paste("Description:This interface gives a very summarized version of the entire dataset, column per column , showing the minimum frequency,maximum frequency, 1st quater, 3rd quater, mean and median of the variable given in that column. "))
+              ),
+                    
       tabItem(tabName = "about",
-              plotOutput("about"),
-              paste("
-              Chat Analysis System for NSSF Organisation.
-    This system is an offline system built to;
-    1. enable NSSF executives make more precise decission concerning the 
-                    
-                    
-                    ")
+              paste("This is an offline system built to analyze the data generated from the day to day operations of the nssf organisation, most importantly the inteructions between the system assistants and the customers of the NSSF organizaton (the people that use the services provided by the system).
+                     This includes the perfomance of the system assistants, the response of the customers about the services provided by the system.It also looks at the time when the system is most busiest. 
+                  "),
+              paste(""),
+              
+              plotOutput("about")
+             
               ),
       
       tabItem(tabName ="barplot1",
-              plotOutput("barPlot")),
+              plotOutput("barPlot")
+              
+              
+              ),
      
       
       tabItem(tabName ="barplot2",
-              plotOutput("barplot")),
+              plotOutput("barplot")
+             
+              ),
       
-      tabItem(tabName = "scatter",
-              plotOutput("scatterPlot"))
+      tabItem(tabName = "ggplot", plotOutput("emails")),
+      
+      tabItem(tabName = "customercare",
+              plotOutput("customerCare")
+              
+              ),
+      tabItem(tabName = "advertise",
+              plotOutput("advert")
+              )
+      
+      
+      #tabItem(tabName = "scatter",
+       #       plotOutput("scatterPlot"))
       
       
     )

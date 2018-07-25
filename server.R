@@ -11,13 +11,16 @@ library(SnowballC)
 library(RColorBrewer)
 library(shinythemes)
 library(wordcloud)
+library(lubridate)
+library(anytime)
+
 
 
 shinyServer(function(input, output, session){
   
 output$about <- renderText({})
   
-#wordcloud
+
  myfile <- reactive({
    
    if(is.null(input$file)){
@@ -28,36 +31,23 @@ output$about <- renderText({})
     
     
  })
+ #wordcloud
  output$wordcloud <- renderPlot({
-mydataset = gsub("[[:digit:]]", "", myfile()$Chat.content)
+   #Cleaning
+   mydataset = gsub("[[:punct:]]", "", myfile()$Chat.content)
+   mydataset = gsub("[[:punct:]]", "", mydataset)
+   mydataset = gsub("[[:digit:]]", "", mydataset)
+   mydataset = gsub("http\\w+", "", mydataset)
+   mydataset = gsub("[ \t]{2,}", "", mydataset)
+   mydataset = gsub("^\\s+|\\s+$", "", mydataset)
+   words <- tm_map(words, removeWords,c("this","can","will","one","what","when","with","you","daina","akurut","hello","the"))
    
+ wordcloud(mydataset, min.freq = input$wd, max.words = input$wcloud,   colors = brewer.pal(8,"Set2"), random.order = F )
  
- mydatasetcorpus <- Corpus(VectorSource(mydataset))
+ #download /wordcloud
  
- 
- #corpus cleaning
- cleancorpus <- tm_map(mydatasetcorpus, stripWhitespace)
- 
- 
- cleancorpus <- tm_map(mydatasetcorpus, removePunctuation)
- 
- 
- cleancorpus <- tm_map(mydatasetcorpus, PlainTextDocument)
- 
- cleancorpus <- tm_map(mydatasetcorpus, removeNumbers)
- 
- cleancorpus <- tm_map(mydatasetcorpus, removeWords, stopwords("english"))
- 
- cleancorpus <- tm_map(mydatasetcorpus, content_transformer(tolower))
- 
- 
- 
- wordcloud(cleancorpus, min.freq = input$wd, max.words = input$wcloud,   colors = brewer.pal(8,"Set2"), random.order = F )
- 
-
-
-  
   })
+ 
   
  #SentimentAnalysis
  output$sentiment <- renderPlot({
@@ -85,8 +75,10 @@ mydataset = gsub("[[:digit:]]", "", myfile()$Chat.content)
    
    
  })
+ 
+ 
 
- #Text Mining
+ #Text Mining 
  output$text <- renderPlot({
    
    #Cleaning
@@ -96,11 +88,11 @@ mydataset = gsub("[[:digit:]]", "", myfile()$Chat.content)
    mydataset = gsub("http\\w+", "", mydataset)
    textdata = gsub("[ \t]{2,}", "", mydataset)
    mydataset = gsub("^\\s+|\\s+$", "", mydataset)
-   View(mydataset)
+   #View(mydataset)
    
    
    mydataset <- gettext(file$Chat.content)
-   View(mydataset)
+   #View(mydataset)
    
    
    # Characters per email
@@ -116,7 +108,7 @@ mydataset = gsub("[[:digit:]]", "", myfile()$Chat.content)
    # Words per email 
    words_per_email = sapply(words_list, length)
    View(words_per_email)
-   barplot(table(words_per_email), border=NA, main="Distribution of words per email", cex.main=1, axes = T)
+   barplot(table(words_per_email),   main="Distribution of words per chat", cex.main=1, axes = T)
    
    # How long is the typical email?
    max(words_per_email)
@@ -128,7 +120,7 @@ mydataset = gsub("[[:digit:]]", "", myfile()$Chat.content)
    
    # Length of words per email
    word_length = sapply(words_list, function(x) mean(nchar(x)))
-   barplot(table(round(word_length)), border=NA,xlab = "Word length in number of characters", main="Distribution of words length per email", cex.main=1)
+   barplot(table(round(word_length)), border=NA,xlab = "Word length in number of characters", ylab= "Chats",main="Distribution of words length per email", cex.main=1)
    
    
  })
@@ -154,7 +146,7 @@ mydataset = gsub("[[:digit:]]", "", myfile()$Chat.content)
    cleancorpus <- tm_map(mydatasetcorpus, content_transformer(tolower))
    #inspect(cleancorpus[1:10])
    
-   cleancorpus <- tm_map(mydatasetcorpus, removeWords, c("this", "part","the","they","and","was","for","there"))
+   #cleancorpus <- tm_map(mydatasetcorpus, removeWords, c("this", "part","the","they","and","was","for","there"))
    
    #wordcloud(cleancorpus, min.freq = 5, colors = brewer.pal(9,"Set2"), random.order = F)
    
@@ -164,7 +156,7 @@ mydataset = gsub("[[:digit:]]", "", myfile()$Chat.content)
    termFrequency <- rowSums(as.matrix(dtm))
    #termFrequency[1:50]
    termFrequency <- subset(termFrequency, termFrequency >=15)
-   barplot(termFrequency, las = 2, col = rainbow(20),main = "Bar plot showing mostly used words", xlab = "frequency", ylab = "words")
+   barplot(termFrequency, las = 2, col = rainbow(20),main = "Bar plot showing mostly used words", xlab = "Words", ylab = "Frequency")
    
    
  })
@@ -179,42 +171,80 @@ mydataset = gsub("[[:digit:]]", "", myfile()$Chat.content)
    
    
  })
- 
- #ScatterPlot
- output$scatterPlot <- renderPlot({
-   
-   plot(myfile()$Minutes~myfile$Chat.content, main = "Scatter plot showimg the number of emails sent at agiven time.", xlab ="Emails sent", ylab = "Time", axes = T )
-   
- })
- 
- #download
- x <- reactive({
-   wordcloud[,as.numeric(input$radio)]
- })
- 
- y <- reactive({
-   wordcloud[,as.numeric(input$radio)]
- })
+
+
  
  
- output$down <- downloadHandler(
-   #specify file name
-   filename = function(){
-     paste("wordcloud",input$radio, sep = ".")
-   }, 
-   
-   #open device
-   #write file
-   #open device
-   content = function(){
-     if(input$radio == "png")
-       png(file)
-     else
-     pdf(file)
-     wordcloud(cleancorpus, min.freq = input$wd, max.words = input$wcloud,   colors = brewer.pal(8,"Set2"), random.order = F )
-     dev.off()
-     
-   }
-   
- )
+ 
+ 
+ #emails per hour
+output$emails <- renderPlot({
+  
+  #csv.file <- read.csv("E:/Recess2/Data_set_2_Chat_analysis/csv file.csv", header=FALSE)
+  #str(csv.file)
+  myfile() %>% select(Minutes) %>% mutate(Minutes = hms(Minutes)) %>% mutate(Minutes = hour(Minutes))%>%mutate(Minutes = as.factor(Minutes))%>%
+    ggplot(aes(x= Minutes))+
+    geom_bar()+
+    labs(title="ggplot showing number of messages sent and recieved in a given hour",
+         x="Time",
+         y="Number of messages per hour")
+  
+})
+
+#summaries
+output$sum <- renderTable({
+  
+summary(myfile())
+  
+})
+
+#code for customer care perfomance
+output$customerCare <- renderPlot({
+  
+  mydatasetcorpus <- Corpus(VectorSource(myfile()$Operator))
+  
+  #Cleaning
+  mydataset = gsub("[[:punct:]]", "", myfile()$Operator)
+  mydataset = gsub("[[:punct:]]", "", mydataset)
+  mydataset = gsub("[[:digit:]]", "", mydataset)
+  mydataset = gsub("http\\w+", "", mydataset)
+  textdata = gsub("[ \t]{2,}", "", mydataset)
+  mydataset = gsub("^\\s+|\\s+$", "", mydataset)
+  
+  
+  dtm <- TermDocumentMatrix(mydatasetcorpus)
+  termFrequency <- rowSums(as.matrix(dtm))
+  termFrequency <- subset(termFrequency, termFrequency <=1200)
+  barplot(termFrequency, col = rainbow(20), main = "Bar plot showing the perfomance of the different customercare operators", xlab = "Operators", ylab = "Perfomance")
+  
+  
+  
+})
+
+#Advertising preference
+output$advert <- renderPlot({
+  
+  mydatasetcorpus <- Corpus(VectorSource(myfile()$Came.from))
+  
+  #Cleaning
+  #mydataset = gsub("[[:punct:]]", "", myfile()$Came.from)
+  #mydataset = gsub("[[:punct:]]", "", mydataset)
+  #mydataset = gsub("[[:digit:]]", "", mydataset)
+  #mydataset = gsub("http\\w+", "", mydataset)
+  #textdata = gsub("[ \t]{2,}", "", mydataset)
+  #mydataset = gsub("^\\s+|\\s+$", "", mydataset)
+  
+  
+  dtm <- TermDocumentMatrix(mydatasetcorpus[1:100])
+  findFreqTerms(dtm, lowfreq = 15)
+  termFrequency <- rowSums(as.matrix(dtm))
+  termFrequency <- subset(termFrequency, termFrequency <=1200)
+  barplot(termFrequency,las = 2, col = rainbow(20), main = "Bar plot showing the perfomance of the different websites used.", xlab = "Websites", ylab = "Usage")
+  
+  
+  
+})
+
+
+
 })
